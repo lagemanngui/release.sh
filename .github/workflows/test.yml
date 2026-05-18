@@ -25,15 +25,22 @@ jobs:
           cp "$GITHUB_WORKSPACE/release.sh" .
           git add release.sh && git commit -m "add release.sh"
 
-          ./release.sh current | grep -q '^v'
-          ./release.sh --dry-run patch | grep -q '\[dry-run\]'
+          [[ "$(./release.sh current)" =~ ^v ]]
+
+          out="$(./release.sh --dry-run patch)"
+          [[ "$out" == *"[dry-run]"* ]]
+
           ./release.sh --no-push init
           test "$(./release.sh current)" = "v0.1.0"
           ./release.sh doctor
 
           ./release.sh --no-push patch
           test "$(./release.sh current)" = "v0.1.1"
-          ./release.sh --dry-run --tags-only minor | grep -qv 'git commit'
+
+          out="$(./release.sh --dry-run --tags-only minor)"
+          [[ "$out" == *"[dry-run]"* ]]
+          [[ "$out" != *"git commit"* ]]
+
           ./release.sh --no-push --tags-only v0.2.0
           test "$(./release.sh current)" = "v0.2.0"
 
