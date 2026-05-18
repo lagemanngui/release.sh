@@ -1,0 +1,31 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+
+      - name: Build release archive
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          test -f release.sh
+          echo "$TAG" > .release-tag
+          chmod +x release.sh
+          zip -j "release-${TAG}.zip" release.sh .release-tag
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-*.zip
+          generate_release_notes: true
