@@ -22,9 +22,34 @@ jobs:
           test -f release.sh
           echo "$TAG" > .release-tag
           chmod +x release.sh
-          zip -j "release-${TAG}.zip" release.sh .release-tag
+          zip -j "release-${TAG}.zip" release.sh .release-tag README.md
 
-      - name: Publish GitHub Release
+      - name: Extract changelog section
+        id: changelog
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          VER="${TAG#v}"
+          BODY_FILE="${RUNNER_TEMP}/release-notes.md"
+          if [[ -f CHANGELOG.md ]] && awk -v ver="$VER" '
+            $0 ~ "^## \\[" ver "\\]" { found=1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md | sed '/./,$!d' > "$BODY_FILE" && [[ -s "$BODY_FILE" ]]; then
+            echo "has_body=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_body=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish GitHub Release (from CHANGELOG)
+        if: steps.changelog.outputs.has_body == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-*.zip
+          body_path: ${{ runner.temp }}/release-notes.md
+
+      - name: Publish GitHub Release (generated notes)
+        if: steps.changelog.outputs.has_body != 'true'
         uses: softprops/action-gh-release@v2
         with:
           files: release-*.zip

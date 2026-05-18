@@ -1,0 +1,45 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run release.sh scenarios
+        run: |
+          set -euo pipefail
+          chmod +x release.sh
+          WORK="$RUNNER_TEMP/release-test"
+          mkdir -p "$WORK"
+          cd "$WORK"
+          git init -b main
+          git config user.email "ci@example.com"
+          git config user.name "ci"
+          git commit --allow-empty -m "init"
+          cp "$GITHUB_WORKSPACE/release.sh" .
+          git add release.sh && git commit -m "add release.sh"
+
+          ./release.sh current | grep -q '^v'
+          ./release.sh --dry-run patch | grep -q '\[dry-run\]'
+          ./release.sh --no-push init
+          test "$(./release.sh current)" = "v0.1.0"
+          ./release.sh doctor
+
+          ./release.sh --no-push patch
+          test "$(./release.sh current)" = "v0.1.1"
+          ./release.sh --dry-run --tags-only minor | grep -qv 'git commit'
+          ./release.sh --no-push --tags-only v0.2.0
+          test "$(./release.sh current)" = "v0.2.0"
+
+          ./release.sh --no-push rc
+          test "$(./release.sh current)" = "v0.2.0-rc.1"
+          ./release.sh --no-push rc
+          test "$(./release.sh current)" = "v0.2.0-rc.2"
+
+          echo "ok:release.sh"

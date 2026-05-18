@@ -13,7 +13,8 @@ Thanks for helping improve **release.sh**. This project stays intentionally smal
    git init && git commit --allow-empty -m "init"
    git remote add origin <your-test-remote-or-skip-push>
    cp /path/to/release.sh .
-   ./release.sh patch   # dry-run push only if you have a safe remote
+   ./release.sh --dry-run patch
+   ./release.sh --no-push init   # safe local test without pushing
    ```
 
 4. Open a pull request with a clear description of the problem and solution.
